@@ -74,7 +74,7 @@ docker compose up -d
 
 ---
 
-## Quick Start (Free Edition)
+## Quick Start
 
 ### Prerequisites
 
@@ -82,7 +82,7 @@ docker compose up -d
 - 8 GB RAM minimum (16 GB recommended for LLMs)
 - NVIDIA GPU recommended (optional, CPU mode works)
 
-### Install
+### Install (Core Stack)
 
 ```bash
 git clone https://github.com/Hardik-369/ai-forge.git
@@ -90,6 +90,25 @@ cd ai-forge
 cp .env.example .env
 # Edit .env with your settings
 docker compose up -d
+```
+
+### Install (Full Stack — with monitoring + SSL)
+
+```bash
+git clone https://github.com/Hardik-369/ai-forge.git
+cd ai-forge
+cp .env.example .env
+# Edit .env with your settings
+docker compose -f docker-compose.yml -f docker-compose.proxy.yml -f docker-compose.monitoring.yml up -d
+```
+
+### Or use the deploy script:
+
+```bash
+chmod +x scripts/deploy.sh
+./scripts/deploy.sh full   # Full stack with monitoring + SSL
+# or
+./scripts/deploy.sh core   # Just AI services
 ```
 
 ### First Run
@@ -101,9 +120,11 @@ docker compose ps
 # Pull your first LLM
 ./scripts/pull-model.sh llama3.2
 
-# Open the UI
-open http://localhost:3000  # Open WebUI
-open http://localhost:5678  # n8n
+# Open the UIs
+open http://localhost:3000   # Open WebUI
+open http://localhost:5678   # n8n
+open http://localhost:3001   # Grafana (full stack)
+open http://localhost:3002   # Uptime Kuma (full stack)
 ```
 
 ---
@@ -118,28 +139,21 @@ open http://localhost:5678  # n8n
 | **Qdrant** | Vector database | 6333 | `qdrant/qdrant` |
 | **PostgreSQL** | Primary database | 5432 | `postgres:17-alpine` |
 | **Redis** | Cache & message broker | 6379 | `redis:7-alpine` |
+| **Traefik** | Reverse proxy + SSL | 443 | `traefik:v3.3` |
+| **Grafana** | Monitoring dashboards | 3001 | `grafana/grafana` |
+| **Prometheus** | Metrics collection | 9090 | `prom/prometheus` |
+| **Loki** | Log aggregation | 3100 | `grafana/loki` |
+| **Uptime Kuma** | Status monitoring | 3002 | `louislam/uptime-kuma` |
 
 ---
 
-## Premium Edition
+## Sponsors
 
-The premium edition adds production-ready infrastructure:
+If AI-Forge saves you time or money, consider supporting development:
 
-| Component | Free | Premium |
-|-----------|------|---------|
-| Core AI Stack (Ollama + WebUI + n8n) | ✅ | ✅ |
-| PostgreSQL + Redis | ✅ | ✅ |
-| Qdrant Vector DB | ✅ | ✅ |
-| **Traefik Reverse Proxy (SSL)** | ❌ | ✅ |
-| **Grafana Dashboards** | ❌ | ✅ |
-| **Prometheus + Loki Monitoring** | ❌ | ✅ |
-| **Uptime Kuma Status** | ❌ | ✅ |
-| **Automated Backups** | ❌ | ✅ |
-| **20+ n8n Workflow Templates** | ❌ | ✅ |
-| **Pre-built AI Agent Templates** | ❌ | ✅ |
-| **Security Hardening Guide** | ❌ | ✅ |
-| **Email/Vector/Web Search Integrations** | ❌ | ✅ |
-| **Priority Support** | ❌ | ✅ |
+[GitHub Sponsor](https://github.com/sponsors/Hardik-369) ❤️
+
+Your sponsorship helps maintain the project, add new integrations, and keep everything free for everyone.
 
 ---
 
@@ -216,8 +230,8 @@ ai-forge/
 
 ## Requirements
 
-| Resource | Free | Premium |
-|----------|------|---------|
+| Resource | Core Stack | Full Stack |
+|----------|-----------|------------|
 | RAM | 8 GB | 16 GB |
 | Disk | 20 GB | 50 GB |
 | CPU | 4 cores | 8 cores |
@@ -231,9 +245,12 @@ ai-forge/
 - [x] Core AI stack
 - [x] n8n automation with PostgreSQL
 - [x] Qdrant vector database
-- [ ] Traefik reverse proxy
-- [ ] Monitoring stack
-- [ ] Pre-built AI agent workflows
+- [x] Traefik reverse proxy with SSL
+- [x] Monitoring stack (Grafana + Prometheus + Loki)
+- [x] Uptime Kuma status page
+- [ ] Pre-built n8n workflow templates
+- [ ] One-click deploy script
+- [ ] Docker health dashboard
 - [ ] Kubernetes Helm chart
 - [ ] Terraform deployment module
 
