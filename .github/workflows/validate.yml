@@ -1,0 +1,30 @@
+name: Validate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Docker Compose
+        run: docker compose config
+
+      - name: Check shell scripts
+        run: |
+          find scripts/ -name "*.sh" -exec shellcheck {} \;
+
+      - name: Validate YAML syntax
+        run: |
+          find . -name "*.yml" -o -name "*.yaml" | xargs -I{} sh -c 'echo "Validating {}"; python3 -c "import yaml; yaml.safe_load(open(\"{}\"))"'
+
+      - name: Check for secrets in .env.example
+        run: |
+          if grep -q "change-me" .env.example; then
+            echo "WARNING: .env.example contains placeholder secrets"
+          fi
