@@ -1,76 +1,69 @@
-# AI-Forge 🏗️
+# AI-Forge
 
-> Self-hosted AI automation stack — local LLMs, workflow automation, vector search, and monitoring in minutes.
+**Production-grade self-hosted AI infrastructure. One command. Full stack. Zero lock-in.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Docker](https://img.shields.io/badge/docker-ready-2496ED?logo=docker)](https://docker.com)
-[![Ollama](https://img.shields.io/badge/ollama-powered-000?logo=ollama)](https://ollama.ai)
-[![n8n](https://img.shields.io/badge/n8n-automation-EA4C71?logo=n8n)](https://n8n.io)
+[![Docker](https://img.shields.io/badge/docker-24.0+-2496ED?logo=docker)](https://docker.com)
+[![Ollama](https://img.shields.io/badge/ollama-0.5+-000?logo=ollama)](https://ollama.ai)
+[![n8n](https://img.shields.io/badge/n8n-1.80+-EA4C71?logo=n8n)](https://n8n.io)
+[![Maintenance](https://img.shields.io/badge/maintenance-active-brightgreen)]()
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)]()
 
 ---
 
-## What It Does
-
-AI-Forge gives you a complete, production-ready local AI platform in under 5 minutes.
-
-Stop wrestling with complex setups. Stop paying for cloud AI APIs. Start building.
-
-| Instead of | AI-Forge does it in |
-|------------|-------------------|
-| 2 hours of Docker research | 2 minutes of config |
-| 30 minutes of n8n setup | Pre-configured with DB |
-| 20 minutes of Ollama config | One `docker compose up` |
-| Paying per-token for APIs | Run locally, free inference |
-
-## The Problem
-
-Setting up a local AI stack is painful:
-- Ollama needs GPU passthrough config
-- n8n needs PostgreSQL and Redis
-- Qdrant needs vector store setup
-- Monitoring requires separate tools
-- Reverse proxy needs SSL configuration
-- Every guide assumes different infrastructure
-
-## The Solution
-
-One command. Full stack. Zero configuration guesswork.
-
-```bash
-git clone https://github.com/Hardik-369/ai-forge.git
-cd ai-forge
-cp .env.example .env
-docker compose up -d
-```
+- [Overview](#overview)
+- [Stack](#stack)
+- [Quick Start](#quick-start)
+- [Deployment Profiles](#deployment-profiles)
+- [Configuration](#configuration)
+- [Management](#management)
+- [Architecture](#architecture)
+- [Requirements](#requirements)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
 
 ---
 
-## Architecture
+## Overview
 
-```
-                   ┌──────────────────────┐
-                   │    Traefik (Proxy)    │
-                   │  SSL / Routing / WAF  │
-                   └──────────┬───────────┘
-                              │
-        ┌─────────────────────┼─────────────────────┐
-        │                     │                     │
-   ┌────▼────┐         ┌─────▼─────┐         ┌─────▼────┐
-   │ Open     │         │   n8n     │         │  Grafana  │
-   │ WebUI    │         │ Workflow  │         │  Monitor  │
-   │ Chat UI  │         │ Automate  │         │          │
-   └────┬────┘         └─────┬─────┘         └─────┬────┘
-        │                    │                     │
-   ┌────▼────┐         ┌─────▼─────┐              │
-   │ Ollama  │         │  Qdrant   │              │
-   │ LLMs    │◄────────┤ Vector DB │              │
-   └─────────┘         └─────┬─────┘              │
-                             │                    │
-                        ┌────▼─────┐        ┌─────▼────┐
-                        │PostgreSQL │        │Prometheus│
-                        │  + Redis  │        │ + Loki   │
-                        └───────────┘        └──────────┘
-```
+AI-Forge deploys a complete local AI platform — LLM inference, workflow automation, vector search, monitoring, and reverse proxy — on any Docker host.
+
+It replaces the typical 2-hour manual setup with a single `docker compose up`.
+
+**What you get:**
+
+- Local LLM inference via Ollama (GPU-accelerated when available)
+- ChatGPT-compatible interface via Open WebUI
+- Visual workflow automation via n8n with PostgreSQL + Redis
+- Vector search via Qdrant
+- Optional Grafana dashboards, Prometheus metrics, Loki logs, and Uptime Kuma status
+- Optional Traefik reverse proxy with automatic Let's Encrypt SSL
+
+**What you don't get:**
+
+- Vendor lock-in
+- Per-token API costs
+- Data leaving your network
+- License keys or premium tiers
+
+---
+
+## Stack
+
+| Service | Role | Default Port | Image |
+|---|---|---|---|
+| **Ollama** | LLM inference (GPU/CPU) | 11434 | `ollama/ollama` |
+| **Open WebUI** | ChatGPT-compatible web UI | 3000 | `open-webui` |
+| **n8n** | Workflow automation engine | 5678 | `n8nio/n8n` |
+| **Qdrant** | Vector similarity search | 6333 | `qdrant/qdrant` |
+| **PostgreSQL** | Primary database (n8n, Qdrant) | 5432 | `postgres:17-alpine` |
+| **Redis** | Cache and message broker | 6379 | `redis:7-alpine` |
+| **Traefik** | Reverse proxy with auto SSL | 443 | `traefik:v3.3` |
+| **Grafana** | Visualization and dashboards | 3001 | `grafana/grafana` |
+| **Prometheus** | Metrics collection and alerting | 9090 | `prom/prometheus` |
+| **Loki** | Log aggregation and querying | 3100 | `grafana/loki` |
+| **Uptime Kuma** | Uptime monitoring and status pages | 3002 | `louislam/uptime-kuma` |
 
 ---
 
@@ -78,186 +71,260 @@ docker compose up -d
 
 ### Prerequisites
 
-- Docker Engine 24.0+ and Docker Compose v2.20+
-- 8 GB RAM minimum (16 GB recommended for LLMs)
-- NVIDIA GPU recommended (optional, CPU mode works)
+- Docker Engine 24.0+
+- Docker Compose v2.20+
+- 8 GB RAM (16 GB for full stack with LLMs)
+- NVIDIA GPU with CUDA 11+ (recommended, not required)
 
-### Install (Core Stack)
+### Install
 
 ```bash
 git clone https://github.com/Hardik-369/ai-forge.git
 cd ai-forge
 cp .env.example .env
-# Edit .env with your settings
+```
+
+Edit `.env` and set at minimum:
+
+```
+OPENWEBUI_SECRET_KEY=$(openssl rand -base64 32)
+N8N_ENCRYPTION_KEY=$(openssl rand -base64 32)
+POSTGRES_PASSWORD=$(openssl rand -base64 24)
+```
+
+Then deploy your chosen profile:
+
+```bash
+# Core stack (AI services only)
 docker compose up -d
 ```
 
-### Install (Full Stack — with monitoring + SSL)
-
 ```bash
-git clone https://github.com/Hardik-369/ai-forge.git
-cd ai-forge
-cp .env.example .env
-# Edit .env with your settings
-docker compose -f docker-compose.yml -f docker-compose.proxy.yml -f docker-compose.monitoring.yml up -d
-```
-
-### Or use the deploy script:
-
-```bash
-chmod +x scripts/deploy.sh
-./scripts/deploy.sh full   # Full stack with monitoring + SSL
-# or
-./scripts/deploy.sh core   # Just AI services
+# Full stack (AI + monitoring + SSL)
+docker compose \
+  -f docker-compose.yml \
+  -f docker-compose.proxy.yml \
+  -f docker-compose.monitoring.yml \
+  up -d
 ```
 
 ### First Run
 
 ```bash
-# Check all services are healthy
-docker compose ps
-
-# Pull your first LLM
-./scripts/pull-model.sh llama3.2
-
-# Open the UIs
-open http://localhost:3000   # Open WebUI
-open http://localhost:5678   # n8n
-open http://localhost:3001   # Grafana (full stack)
-open http://localhost:3002   # Uptime Kuma (full stack)
+docker compose ps                                          # Verify health
+./scripts/pull-model.sh llama3.2                           # Download an LLM
+curl http://localhost:3000                                  # Open WebUI
+curl http://localhost:5678                                  # n8n
 ```
 
----
+Full stack endpoints:
 
-## Services
-
-| Service | Role | Default Port | Image |
-|---------|------|-------------|-------|
-| **Ollama** | Local LLM inference | 11434 | `ollama/ollama` |
-| **Open WebUI** | ChatGPT-compatible UI | 3000 | `open-webui` |
-| **n8n** | Workflow automation | 5678 | `n8nio/n8n` |
-| **Qdrant** | Vector database | 6333 | `qdrant/qdrant` |
-| **PostgreSQL** | Primary database | 5432 | `postgres:17-alpine` |
-| **Redis** | Cache & message broker | 6379 | `redis:7-alpine` |
-| **Traefik** | Reverse proxy + SSL | 443 | `traefik:v3.3` |
-| **Grafana** | Monitoring dashboards | 3001 | `grafana/grafana` |
-| **Prometheus** | Metrics collection | 9090 | `prom/prometheus` |
-| **Loki** | Log aggregation | 3100 | `grafana/loki` |
-| **Uptime Kuma** | Status monitoring | 3002 | `louislam/uptime-kuma` |
+| Service | URL | Default Credentials |
+|---|---|---|
+| Open WebUI | `http://localhost:3000` | Create on first login |
+| n8n | `http://localhost:5678` | Set via `.env` |
+| Grafana | `http://localhost:3001` | `admin` / `admin` |
+| Uptime Kuma | `http://localhost:3002` | Create on first login |
+| API (Ollama) | `http://localhost:11434` | — |
 
 ---
 
-## Sponsors
+## Deployment Profiles
 
-If AI-Forge saves you time or money, consider supporting development:
+| Profile | Services | Command |
+|---|---|---|
+| **Core** | Ollama, WebUI, n8n, Qdrant, PostgreSQL, Redis | `docker compose up -d` |
+| **Full** | Core + Traefik, Grafana, Prometheus, Loki, Uptime Kuma | See [full stack](#install) |
+| **Custom** | Any subset | Use `--profile` flags |
 
-[GitHub Sponsor](https://github.com/sponsors/Hardik-369) ❤️
-
-Your sponsorship helps maintain the project, add new integrations, and keep everything free for everyone.
-
----
-
-## Environment Variables
-
-See `.env.example` for all options. Key variables:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `DOMAIN` | `ai-forge.local` | Base domain for services |
-| `OPENWEBUI_SECRET_KEY` | *(required)* | Session encryption key |
-| `N8N_ENCRYPTION_KEY` | *(required)* | n8n encryption key |
-| `POSTGRES_PASSWORD` | *(required)* | Database password |
-| `OLLAMA_NUM_PARALLEL` | `4` | Concurrent model requests |
-| `MEMORY_LIMIT_AI` | `4g` | AI service memory limit |
-
----
-
-## Common Tasks
+### Deploy Script
 
 ```bash
-# View logs
-docker compose logs -f
-
-# Update all services
-docker compose pull
-docker compose up -d
-
-# Stop the stack
-docker compose down
-
-# Full cleanup (removes volumes)
-docker compose down -v
-
-# Run a model query via API
-curl http://localhost:11434/api/generate -d '{
-  "model": "llama3.2",
-  "prompt": "Hello!"
-}'
+./scripts/deploy.sh core     # Core stack
+./scripts/deploy.sh full     # Full stack
+./scripts/deploy.sh status   # Health check
+./scripts/deploy.sh logs     # Tail logs
+./scripts/deploy.sh stop     # Stop all services
+./scripts/deploy.sh update   # Pull latest images
+./scripts/deploy.sh clean    # Remove everything (data loss)
 ```
 
 ---
 
-## Directory Structure
+## Configuration
+
+All configuration lives in `.env`. Key variables:
+
+| Variable | Default | Required | Description |
+|---|---|---|---|
+| `DOMAIN` | `ai-forge.local` | No | Base domain for Traefik routing |
+| `CERT_EMAIL` | — | For SSL | Let's Encrypt notification email |
+| `OPENWEBUI_SECRET_KEY` | — | **Yes** | Session encryption (32+ chars) |
+| `N8N_ENCRYPTION_KEY` | — | **Yes** | n8n credential encryption (32+ chars) |
+| `N8N_USER_MANAGEMENT_JWT_SECRET` | — | **Yes** | n8n JWT signing secret |
+| `POSTGRES_PASSWORD` | — | **Yes** | Database superuser password |
+| `POSTGRES_USER` | `ai_forge` | No | Database user |
+| `POSTGRES_DB` | `ai_forge` | No | Database name |
+| `QDRANT_API_KEY` | — | No | Vector DB access key |
+| `REDIS_PASSWORD` | — | No | Redis password (set for production) |
+| `GRAFANA_PORT` | `3001` | No | Grafana host port |
+| `UPTIME_KUMA_PORT` | `3002` | No | Uptime Kuma host port |
+| `MEMORY_LIMIT_AI` | `4g` | No | Memory cap for AI services |
+| `TZ` | `UTC` | No | Container timezone |
+
+Generate secure values:
+
+```bash
+cat > .env <<EOF
+OPENWEBUI_SECRET_KEY=$(openssl rand -base64 32)
+N8N_ENCRYPTION_KEY=$(openssl rand -base64 32)
+N8N_USER_MANAGEMENT_JWT_SECRET=$(openssl rand -base64 32)
+POSTGRES_PASSWORD=$(openssl rand -base64 24)
+POSTGRES_USER=ai_forge
+POSTGRES_DB=ai_forge
+EOF
+```
+
+---
+
+## Management
+
+### Model Management
+
+```bash
+# List available models
+ollama list
+
+# Pull a model
+./scripts/pull-model.sh llama3.2
+
+# Pull from API
+curl -X POST http://localhost:11434/api/pull -d '{"name": "mistral"}'
+
+# Remove a model
+ollama rm llama3.2
+```
+
+### Backup
+
+```bash
+# Stop services writing to volumes
+docker compose stop postgres redis qdrant
+
+# Backup volumes
+docker run --rm -v ai-forge_postgres_data:/source -v $(pwd)/backups:/dest alpine \
+  tar czf /dest/postgres-$(date +%Y%m%d).tar.gz -C /source .
+
+# Restart
+docker compose start postgres redis qdrant
+```
+
+### Update
+
+```bash
+docker compose pull
+docker compose up -d
+```
+
+### Logs
+
+```bash
+docker compose logs -f           # All services
+docker compose logs -f n8n       # Specific service
+```
+
+---
+
+## Architecture
 
 ```
-ai-forge/
-├── docker-compose.yml         # Core stack definition
-├── .env.example               # Environment template
-├── stacks/
-│   ├── proxy/
-│   │   └── traefik.yml        # Reverse proxy (premium)
-│   └── monitoring/
-│       ├── monitoring.yml     # Monitoring stack (premium)
-│       ├── prometheus.yml     # Metrics config
-│       ├── loki-config.yml    # Log aggregation config
-│       └── grafana-datasources.yml
-├── scripts/
-│   ├── setup.sh               # Initial setup
-│   ├── backup.sh              # Volume backup
-│   └── pull-model.sh          # Download Ollama models
-├── docs/
-│   ├── installation.md
-│   ├── configuration.md
-│   ├── upgrade.md
-│   ├── troubleshooting.md
-│   └── architecture.md
-└── examples/
-    ├── n8n-workflows/         # Automation templates
-    └── api-examples/          # REST API examples
+                    ┌──────────────────────┐
+                    │    Traefik :443       │
+                    │  SSL / Routing / WAF  │
+                    └──────────┬───────────┘
+                               │
+         ┌─────────────────────┼─────────────────────┐
+         │                     │                     │
+    ┌────▼────┐         ┌─────▼─────┐         ┌─────▼────┐
+    │ Open     │         │   n8n     │         │  Grafana  │
+    │ WebUI    │         │ Workflow  │         │  Dashbrd  │
+    │ :3000    │         │ :5678     │         │ :3001     │
+    └────┬────┘         └─────┬─────┘         └─────┬────┘
+         │                    │                     │
+    ┌────▼────┐         ┌─────▼─────┐              │
+    │ Ollama  │         │  Qdrant   │              │
+    │ :11434  │◄────────┤ :6333     │              │
+    └─────────┘         └─────┬─────┘              │
+                              │                    │
+                         ┌────▼─────┐        ┌─────▼────┐
+                         │PostgreSQL │        │Prometheus │
+                         │ :5432     │        │ + Loki    │
+                         │ + Redis   │        │ :9090     │
+                         │ :6379     │        │ :3100     │
+                         └───────────┘        └───────────┘
 ```
+
+All services communicate over the `ai-forge-network` bridge. Sensitive services (database, vector store) are not exposed to the host unless explicitly configured.
 
 ---
 
 ## Requirements
 
-| Resource | Core Stack | Full Stack |
-|----------|-----------|------------|
+| Resource | Core | Full |
+|---|---|---|
 | RAM | 8 GB | 16 GB |
 | Disk | 20 GB | 50 GB |
 | CPU | 4 cores | 8 cores |
-| GPU | Optional | Recommended |
+| GPU | Optional (CUDA 11+) | Recommended |
 | Docker | 24.0+ | 24.0+ |
+
+**GPU passthrough** is configured automatically if NVIDIA Container Toolkit is installed. Verify:
+
+```bash
+docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
+```
 
 ---
 
 ## Roadmap
 
-- [x] Core AI stack
-- [x] n8n automation with PostgreSQL
-- [x] Qdrant vector database
-- [x] Traefik reverse proxy with SSL
-- [x] Monitoring stack (Grafana + Prometheus + Loki)
-- [x] Uptime Kuma status page
-- [ ] Pre-built n8n workflow templates
-- [ ] One-click deploy script
-- [ ] Docker health dashboard
-- [ ] Kubernetes Helm chart
-- [ ] Terraform deployment module
+- [x] Core AI stack (Ollama, WebUI, n8n, Qdrant, PostgreSQL, Redis)
+- [x] Monitoring and observability (Grafana, Prometheus, Loki)
+- [x] Reverse proxy with automatic SSL (Traefik)
+- [x] Uptime monitoring (Uptime Kuma)
+- [x] Deploy automation (`scripts/deploy.sh`, `install.sh`)
+- [ ] Pre-built n8n workflow templates (RAG, email agents, Slack bots)
+- [ ] Docker health dashboard (container-level metrics in Grafana)
+- [ ] Kubernetes Helm chart (K3s-optimized)
+- [ ] Terraform module (single-node and cluster deployments)
+- [ ] Automated volume backup to S3/SCP
+- [ ] SSO/OIDC authentication for WebUI and Grafana
+
+---
+
+## Contributing
+
+PRs are welcome. For structural changes, open an issue first.
+
+This project follows:
+
+- Conventional commits (`feat:`, `fix:`, `docs:`, `chore:`)
+- Semantic versioning
+- Docker label schema for service discovery
+
+---
+
+## Support
+
+If this project saves you time or money:
+
+- [GitHub Sponsors](https://github.com/sponsors/Hardik-369)
+- [Buy Me a Coffee](https://www.buymeacoffee.com/hardikkawale)
+
+Maintenance and development are funded entirely by community sponsors.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE)
-
-Built with ❤️ for the self-hosted community.
+MIT. See [LICENSE](LICENSE).
